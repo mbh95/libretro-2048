@@ -100,22 +100,36 @@ else ifeq ($(platform), osx)
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
 	EXT?=dylib
-   TARGET := $(TARGET_NAME)_libretro_ios.$(EXT)
+	TARGET := $(TARGET_NAME)_libretro_ios.$(EXT)
+	ifeq ($(platform),ios-arm64-simulator)
+		TARGET := $(TARGET_NAME)_libretro_ios_simulator.dylib
+	else
+		TARGET := $(TARGET_NAME)_libretro_ios.dylib
+	endif
    fpic := -fPIC
    SHARED := -dynamiclib
    DEFINES := -DIOS
 
 ifeq ($(IOSSDK),)
-   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+  ifeq ($(platform),ios-arm64-simulator)
+    IOSSDK := $(shell xcodebuild -version -sdk iphonesimulator Path)
+  else
+    IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+  endif
 endif
 ifeq ($(platform),ios-arm64)
   CC = cc -arch arm64 -isysroot $(IOSSDK)
+else ifeq ($(platform),ios-arm64-simulator)
+  MIN_IOS_SIM_VERSION = 11.0
+  SIM_TARGET = arm64-apple-ios$(MIN_IOS_SIM_VERSION)-simulator
+  CC = cc -arch arm64 -target $(SIM_TARGET) -isysroot $(IOSSDK)
 else
 	CC = cc -arch armv7 -isysroot $(IOSSDK)
 endif
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
    SHARED += -miphoneos-version-min=8.0
    CC +=  -miphoneos-version-min=8.0
+else ifeq ($(platform),ios-arm64-simulator)
 else
    SHARED += -miphoneos-version-min=5.0
    CC +=  -miphoneos-version-min=5.0
